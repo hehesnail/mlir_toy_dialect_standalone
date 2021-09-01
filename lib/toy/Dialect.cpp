@@ -264,6 +264,15 @@ void SubOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
 void SubOp::inferShapes() { getResult().setType(getOperand(0).getType()); }
 
 //===----------------------------------------------------------------------===//
+// DivOp
+
+void DivOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
+                  mlir::Value lhs, mlir::Value rhs) {
+    state.addTypes(UnrankedTensorType::get(builder.getF64Type()));
+    state.addOperands({lhs, rhs});
+}
+
+//===----------------------------------------------------------------------===//
 // CastOp
 
 /// Infer the output shape of the CastOp, this is required by the shape
@@ -411,6 +420,15 @@ static mlir::LogicalResult verify(TransposeOp op) {
            << "expected result shape to be a transpose of the input";
   }
   return mlir::success();
+}
+
+//===----------------------------------------------------------------------===//
+// SumOp
+
+void SumOp::build(mlir::OpBuilder &builder, mlir::OperationState &state, 
+                  mlir::Value input) {
+    state.addTypes(UnrankedTensorType::get(builder.getF64Type()));
+    state.addOperands(input);
 }
 
 //===----------------------------------------------------------------------===//

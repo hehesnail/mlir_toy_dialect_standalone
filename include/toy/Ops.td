@@ -145,10 +145,10 @@ def SubOp : Toy_Op<"sub",
 }
 
 def CastOp : Toy_Op<"cast", [
-     DeclareOpInterfaceMethods<CastOpInterface>,
-     DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
-     NoSideEffect,
-     SameOperandsAndResultShape
+    DeclareOpInterfaceMethods<CastOpInterface>,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
+    NoSideEffect,
+    SameOperandsAndResultShape
   ]> {
   let summary = "shape cast operation";
   let description = [{
@@ -175,8 +175,8 @@ def GenericCallOp : Toy_Op<"generic_call",
     arguments expected by the callee. For example:
 
     ```mlir
-     %4 = toy.generic_call @my_func(%1, %3)
-           : (tensor<2x3xf64>, tensor<2x3xf64>) -> tensor<*xf64>
+    %4 = toy.generic_call @my_func(%1, %3)
+          : (tensor<2x3xf64>, tensor<2x3xf64>) -> tensor<*xf64>
     ```
 
     This is only valid if a function named "my_func" exists and takes two
@@ -220,6 +220,47 @@ def MulOp : Toy_Op<"mul",
   // Allow building a MulOp with from the two input operands.
   let builders = [
     OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+  ];
+}
+
+// Add DivOp, elementwise division
+def DivOp : Toy_Op<"div",
+    [NoSideEffect]> {
+  let summary = "element-wise division operation";
+  let description = [{
+    The "div" operation performs element-wise division between two tensors.
+    The shapes of the tensor operands are expected to match.
+  }];
+
+  let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
+  let results = (outs F64Tensor);
+
+  // Specify a parser and printer method
+  let parser = [{ return ::parseBinaryOp(parser, result); }];
+  let printer = [{ return ::printBinaryOp(p, *this); }];
+
+  let builders = [
+    OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+  ];
+}
+
+// Add SumOp
+def SumOp : Toy_Op<"sum", 
+    [NoSideEffect]> {
+  let summary = "sum all elements in tensor";
+  let description = [{
+    The "sum" operation calculate sum of the tensor.
+  }];
+  
+  let arguments = (ins F64Tensor:$input);
+  let results = (outs F64Tensor);
+
+  let assemblyFormat = [{
+    `(` $input `:` type($input) `)` attr-dict `to` type(results)
+  }];
+
+  let builders = [
+    OpBuilder<(ins "Value":$input)>
   ];
 }
 
