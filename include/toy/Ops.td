@@ -144,6 +144,9 @@ def SubOp : Toy_Op<"sub",
   ];
 }
 
+// cast operation adds a CastOpInterface to the traits list. 
+// This interface provides several utilities for cast-like op, 
+// such as folding identity casts and verification.
 def CastOp : Toy_Op<"cast", [
     DeclareOpInterfaceMethods<CastOpInterface>,
     DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
@@ -165,6 +168,8 @@ def CastOp : Toy_Op<"cast", [
   let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
 }
 
+// The CallInterfaces.td used for Inline Optim
+// thus for GenericCallOp, add related traits
 def GenericCallOp : Toy_Op<"generic_call",
     [DeclareOpInterfaceMethods<CallOpInterface>]> {
   let summary = "generic call operation";
@@ -262,6 +267,9 @@ def SumOp : Toy_Op<"sum",
   let builders = [
     OpBuilder<(ins "Value":$input)>
   ];
+
+  // Invoke a static verify method to verify this sum operation.
+  let verifier = [{ return ::verify(*this); }];
 }
 
 def PrintOp : Toy_Op<"print"> {
@@ -408,6 +416,28 @@ def TransposeOp : Toy_Op<"transpose",
 
   // Invoke a static verify method to verify this transpose operation.
   let verifier = [{ return ::verify(*this); }];
+}
+
+// Add InvertOp, elementwise 1 / elem
+def InvertOp : Toy_Op<"invert", 
+    [NoSideEffect]> {
+  
+  let summary = "invert operation";
+
+  let arguments = (ins F64Tensor:$input);
+  let results = (outs F64Tensor);
+
+  let assemblyFormat = [{
+    `(` $input `:` type($input) `)` attr-dict `to` type(results)
+  }];
+
+  // Enable registering canonicalization patterns with this operation
+  let hasCanonicalizer = 1;
+
+  // Allow building a InvertOp with from the input operand
+  let builders = [
+    OpBuilder<(ins "Value":$input)>
+  ];
 }
 
 #endif // TOY_OPS

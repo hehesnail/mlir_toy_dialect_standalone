@@ -423,12 +423,37 @@ static mlir::LogicalResult verify(TransposeOp op) {
 }
 
 //===----------------------------------------------------------------------===//
+// InvertOp
+
+void InvertOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
+                    mlir::Value value) {
+  state.addTypes(UnrankedTensorType::get(builder.getF64Type()));
+  state.addOperands(value);
+}
+
+//===----------------------------------------------------------------------===//
 // SumOp
 
 void SumOp::build(mlir::OpBuilder &builder, mlir::OperationState &state, 
                   mlir::Value input) {
     state.addTypes(UnrankedTensorType::get(builder.getF64Type()));
     state.addOperands(input);
+}
+
+static mlir::LogicalResult verify(SumOp op) {
+  auto inputType = op.getOperand().getType().dyn_cast<RankedTensorType>();
+  auto resultType = op.getType().dyn_cast<RankedTensorType>();
+
+  if (!inputType || !resultType) {
+    return mlir::success();
+  }
+
+  if (resultType.getShape().size() != 1 || resultType.getShape()[0] == 1) {
+    return op.emitError()
+            << "expected result shape should be equal to 1";
+  }
+
+  return mlir::success();
 }
 
 //===----------------------------------------------------------------------===//

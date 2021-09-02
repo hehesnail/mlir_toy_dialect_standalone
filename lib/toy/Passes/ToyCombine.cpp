@@ -70,6 +70,31 @@ struct SimplifyRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
   }
 };
 
+// C++ rewrite pattern for InvertOp, it optimizes invert(invert(x)) -> x
+struct SimplifyRedundantInvert : public mlir::OpRewritePattern<InvertOp> {
+
+  // register pattern to match every toy.invert in IR
+  SimplifyRedundantInvert(mlir::MLIRContext *context)
+      : OpRewritePattern<InvertOp>(context, 1) {}
+
+  // attempts to match a pattern and rewrite it.
+  mlir::LogicalResult
+  matchAndRewrite(InvertOp op, 
+                  mlir::PatternRewriter &rewriter) const override {
+    // look through the input of current invert
+    mlir::Value invertInput = op.getOperand();
+    InvertOp invertInputOp = invertInput.getDefiningOp<InvertOp>();
+
+    // Input defined by another invert? if not, no match
+    if (!invertInputOp)
+      return failure();
+
+    // otherwise, we have a redundant invert, use the rewriter
+    rewriter.replaceOp(op, {invertInputOp.getOperand()});
+    return success();
+  }
+};
+
 /// Register our patterns as "canonicalization" patterns on the TransposeOp so
 /// that they can be picked up by the Canonicalization framework.
 void TransposeOp::getCanonicalizationPatterns(RewritePatternSet &results,
@@ -83,4 +108,11 @@ void ReshapeOp::getCanonicalizationPatterns(RewritePatternSet &results,
                                             MLIRContext *context) {
   results.add<ReshapeReshapeOptPattern, RedundantReshapeOptPattern,
               FoldConstantReshapeOptPattern>(context);
+}
+
+// Register invert pattern as "canonicalization" patterns on InvertOp so 
+// that they can be picked up by the Canonicalization framework.
+void InvertOp::getCanonicalizationPatterns(RewritePatternSet &results,
+                                          MLIRContext *context) {
+  results.add<SimplifyRedundantInvert>(context);
 }
